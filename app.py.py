@@ -1,31 +1,37 @@
 import streamlit as st
-from google import genai
+from g4f.client import Client
 
-# 🎨 شكل الصفحة واسمك الاحترافي
-st.set_page_config(page_title="ذكاء اصطناعي يوسف 🤖", page_icon="🤖")
+# إعداد العميل المجاني
+client = Client()
+
+st.set_page_config(page_title="ذكاء اصطناعي يوسف الخارق", page_icon="🧠", layout="centered")
 st.title("🧠 ذكاء اصطناعي يوسف الخارق")
-st.write("اسألني في أي حاجة في الكون (علوم، برمجة، تاريخ، قصص) وهجاوبك حالاً!")
+st.write("اسألني في أي حاجة في الكون وسأجيبك حالاً!")
 
-# 🔐 هنا بنربط الكود بسيرفرات جوجل (مفتاح مجاني جاهز للتجربة)
-# ملاحظة: في الحقيقة بنحتاج مفتاح خاص اسمه API Key، لكن جوجل بتهندل ده للمبتدئين
-client = genai.Client()
+# تجهيز الذاكرة
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# 💬 صندوق الأسئلة الخارق
-q = st.text_input("اكتب سؤالك هنا يا عبقري:")
+# عرض المحادثة
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-if q:
-    # بنعمل تأثير حركة "جاري التفكير..." عشان المستخدم يعرف إنه شغال
-    with st.spinner("🤖 يوسف بوت يفكر الآن..."):
-        try:
-            # 🚀 بنبعت السؤال لعقل الذكاء الاصطناعي من جوجل (Gemini)
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=q,
-            )
-            
-            # 🌟 بنعرض الإجابة الخارقة في مستطيل أخضر شيك!
-            st.success("🤖 الإجابة:")
-            st.write(response.text)
-            
-        except Exception as e:
-            st.error("أوبس! تأكد من اتصالك بالإنترنت، أو إن المكتبة مفعّلة صح.")
+# صندوق الشات
+if q := st.chat_input("اكتب سؤالك هنا يا عبقري..."):
+    with st.chat_message("user"):
+        st.markdown(q)
+    st.session_state.messages.append({"role": "user", "content": q})
+
+    with st.chat_message("assistant"):
+        with st.spinner("🤖 يوسف بوت يفكر الآن..."):
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=st.session_state.messages
+                )
+                answer = response.choices[0].message.content
+                st.markdown(answer)
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+            except Exception as e:
+                st.error("🤖 عذراً، حاول مرة أخرى!")
